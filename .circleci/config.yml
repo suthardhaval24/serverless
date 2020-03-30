@@ -1,3 +1,4 @@
+---
 version: 2
 jobs:
   build:
@@ -5,11 +6,9 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
-
       - run:
           name: Install packages
           command: sudo apt-get update && sudo apt-get install wget zip unzip python2.7 python-pip -y
-
       - run:
           name: Install awscli
           command: |
@@ -51,9 +50,9 @@ jobs:
           name: Make CodeDeploy API call
           command: |
             echo "Hello"
-
 workflows:
-  build:
+  version: 2
+  builbuild-deploy-workflowd:
     jobs:
       - build:
           filters:
