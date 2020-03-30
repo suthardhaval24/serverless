@@ -32,8 +32,7 @@ public class LogEvent implements RequestHandler<SNSEvent, Object> {
 
     @Override
     public Object handleRequest(SNSEvent request, Context context) {
-//
-//        LambdaLogger logger = context.getLogger();
+        LambdaLogger logger = context.getLogger();
 //        if (request.getRecords() == null) {
 //            logger.log("No records found!");
 //            return null;
