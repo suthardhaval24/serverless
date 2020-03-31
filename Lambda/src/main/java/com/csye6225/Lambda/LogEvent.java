@@ -13,8 +13,16 @@ import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
 import com.amazonaws.services.simpleemail.model.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class LogEvent implements RequestHandler<SNSEvent, Object> {
@@ -33,46 +41,53 @@ public class LogEvent implements RequestHandler<SNSEvent, Object> {
     @Override
     public Object handleRequest(SNSEvent request, Context context) {
         LambdaLogger logger = context.getLogger();
-//        if (request.getRecords() == null) {
-//            logger.log("No records found!");
-//            return null;
-//        }
-//
-//        logger.log("Email= " + request.getRecords().get(0).getSNS().getMessage());
-//
-//        logger.log("SNS event=" + request);
-//        logger.log("Context=" + context);
-//        logger.log("TTL expirationTime=" + expirationTime);
-//
-//        String userName = request.getRecords().get(0).getSNS().getMessage();
-//        String token = UUID.randomUUID().toString();
-//        this.initDynamoDbClient();
-//        Item existUser = this.dynamo.getTable(TABLE_NAME).getItem("id", userName);
-//
-//        //figure out how to send the link url to the user in email address
-//        if (existUser == null) {
-//            this.dynamo.getTable(TABLE_NAME).putItem(new PutItemSpec()
-//                    .withItem(new Item().withString("id", userName).withString("Token", token).withLong("TTL", expirationTime)));
-//            this.body = "Password reset link here : \n https://csye6225-spring2019.com/reset?email=" + userName + "&token=" + token;
-//
-//
-//            try {
-//                Content subject = new Content().withData(SUBJECT);
-//                Content textbody = new Content().withData(body);
-//                Body body = new Body().withText(textbody);
-//                Message message = new Message().withSubject(subject).withBody(body);
-//                SendEmailRequest emailRequest = new SendEmailRequest()
-//                        .withDestination(new Destination().withToAddresses(userName)).withMessage(message).withSource(FROM);
-//                AmazonSimpleEmailService client = AmazonSimpleEmailServiceClientBuilder.standard()
-//                        .withRegion(Regions.US_EAST_1).build();
-//                client.sendEmail(emailRequest);
-//                logger.log("Email sent successfully!");
-//            } catch (Exception ex) {
-//                ex.printStackTrace();
-//            }
-//        }
+        if (request.getRecords() == null) {
+            logger.log("No records found!");
+            return null;
+        }
 
-        logger.log("Hello World");
+        logger.log("SNS event=" + request);
+        logger.log("Context=" + context);
+        logger.log("TTL expirationTime=" + expirationTime);
+
+        JSONObject json = null;
+        String jsonString = request.getRecords().get(0).getSNS().getMessage();
+        JSONParser parser = new JSONParser();
+        try {
+            json = (JSONObject) parser.parse(jsonString);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        String token = UUID.randomUUID().toString();
+        String userName = json.get("Email").toString();
+        String dueBills = json.get("DueBill").toString();
+
+
+        this.initDynamoDbClient();
+        Item existUser = this.dynamo.getTable(TABLE_NAME).getItem("id", userName);
+
+        //figure out how to send the link url to the user in email address
+        if (existUser == null) {
+            this.dynamo.getTable(TABLE_NAME).putItem(new PutItemSpec()
+                    .withItem(new Item().withString("id", userName).withString("Token", token).withLong("TTL", expirationTime)));
+            this.body = "Hello, \n" + "Below are the links to Bills: \n" + dueBills + "Thanks, \n" + FROM;
+
+            try {
+                Content subject = new Content().withData(SUBJECT);
+                Content textbody = new Content().withData(body);
+                Body body = new Body().withText(textbody);
+                Message message = new Message().withSubject(subject).withBody(body);
+                SendEmailRequest emailRequest = new SendEmailRequest()
+                        .withDestination(new Destination().withToAddresses(userName)).withMessage(message).withSource(FROM);
+                AmazonSimpleEmailService client = AmazonSimpleEmailServiceClientBuilder.standard()
+                        .withRegion(Regions.US_EAST_1).build();
+                client.sendEmail(emailRequest);
+                logger.log("Email sent successfully!");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
         return null;
     }
 
