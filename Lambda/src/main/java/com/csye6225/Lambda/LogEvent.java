@@ -13,8 +13,6 @@ import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
 import com.amazonaws.services.simpleemail.model.*;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.time.Instant;
 import java.util.UUID;
