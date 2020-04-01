@@ -61,7 +61,7 @@ public class LogEvent implements RequestHandler<SNSEvent, Object> {
         if (json.containsKey("Email")) {
             userName = json.get("Email").toString();
             dueBills = json.get("DueBill").toString();
-            bodyMessage = "Hello, \n" + "Below are the links to Bills: \n" + dueBills + "Thanks, \n" + FROM;
+            bodyMessage = "Hello, \n" + "Below are the links to Bills: \n" + dueBills + "\n" + "Thanks, \n" + FROM;
         } else {
             bodyMessage = jsonString;
         }
