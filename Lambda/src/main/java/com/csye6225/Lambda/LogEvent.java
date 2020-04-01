@@ -13,6 +13,9 @@ import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
 import com.amazonaws.services.simpleemail.model.*;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -22,7 +25,6 @@ public class LogEvent implements RequestHandler<SNSEvent, Object> {
     private DynamoDB dynamo;
     private final String TABLE_NAME = "csye6225_Webapp_BillDues";
     private Regions REGION = Regions.US_EAST_1;
-    static final String FROM1 = "AKIA5IBVDG243T4PGI7M@dev.dhavalsuthar.me";
     static final String FROM = System.getenv("fromaddr");
     static final String SUBJECT = "Bills Due Information";
     private String body;
@@ -47,6 +49,23 @@ public class LogEvent implements RequestHandler<SNSEvent, Object> {
         logger.log("Context=" + context);
         logger.log("TTL expirationTime=" + expirationTime);
 
+        JSONObject json = null;
+        String jsonString = request.getRecords().get(0).getSNS().getMessage();
+        JSONParser parser = new JSONParser();
+        try {
+            json = (JSONObject) parser.parse(jsonString);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        if (json.containsKey("Email")) {
+            userName = json.get("Email").toString();
+            dueBills = json.get("DueBill").toString();
+            bodyMessage = "Hello, \n" + "Below are the links to Bills: \n" + dueBills + "Thanks, \n" + FROM;
+        } else {
+            bodyMessage = jsonString;
+        }
+
         String token = UUID.randomUUID().toString();
 
 
@@ -57,7 +76,7 @@ public class LogEvent implements RequestHandler<SNSEvent, Object> {
         if (existUser == null) {
             this.dynamo.getTable(TABLE_NAME).putItem(new PutItemSpec()
                     .withItem(new Item().withString("id", userName).withString("Token", token).withLong("TTL", expirationTime)));
-            this.body = "Hello World!";
+            this.body = bodyMessage;
 
             try {
                 Content subject = new Content().withData(SUBJECT);
